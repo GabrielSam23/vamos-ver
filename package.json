@@ -21,6 +21,6 @@
     "pg": "^8.11.5",
     "socket.io": "^4.2.1",
     "http": "0.0.1-security",
-    "cors": "^2.8.5" // Dependência CORS adicionada
+    "cors": "^2.8.5" 
   }
 }
