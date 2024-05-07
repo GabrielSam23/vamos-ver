@@ -8,7 +8,10 @@ require('dotenv').config();
 // Middlewares
 const app = express();
 app.use(express.json());
-app.use(cors()); // Usando o middleware CORS para permitir solicitações de qualquer origem
+app.use(cors({
+  origin: 'http://127.0.0.1:5500',
+  credentials: true
+}));
 
 // Database connection
 const pool = new Pool({
@@ -100,9 +103,8 @@ const server = app.listen(port, () => console.log(`Listening to port ${port}`));
 // Configuração do Socket.io
 const io = new Server(server, {
   cors: {
-    origin: 'http://127.0.0.1:5500', // Substitua por sua origem exata
+    origin: 'http://127.0.0.1:5500',
     methods: ['GET', 'POST'],
     credentials: true
   }
-});
 });
