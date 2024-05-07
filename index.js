@@ -9,7 +9,7 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: 'https://superb-cajeta-b18150.netlify.app/',
+  origin: 'https://superb-cajeta-b18150.netlify.app',
   credentials: true
 }));
 
@@ -103,7 +103,7 @@ const server = app.listen(port, () => console.log(`Listening to port ${port}`));
 // Configuração do Socket.io
 const io = new Server(server, {
   cors: {
-    origin: 'https://superb-cajeta-b18150.netlify.app/',
+    origin: 'https://superb-cajeta-b18150.netlify.app',
     methods: ['GET', 'POST'],
     credentials: true
   }
