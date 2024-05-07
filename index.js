@@ -104,8 +104,11 @@ const port = process.env.PORT || 9001;
 const server = app.listen(port, () => console.log(`Listening to port ${port}`));
 
 // Configuração do Socket.io
-const io = require('socket.io')(server, {
+const io = require('socket.io')(httpServer, {
   cors: {
-    origin: '*',
+    origin: "https://vamos-ver-ten.vercel.app/stock-value",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["my-custom-header"],
+    credentials: true
   }
 });
