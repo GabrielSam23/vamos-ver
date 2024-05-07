@@ -1,13 +1,13 @@
-// index.js (backend)
+// Import packages
 const express = require("express");
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
 const { Client } = require('pg');
 require('dotenv').config();
 
+// Middlewares
 const app = express();
 app.use(express.json());
 
+// Database connection
 const { PGHOST, PGDATABASE, PGUSER, PGPASSWORD } = process.env;
 
 const client = new Client({
@@ -38,6 +38,7 @@ async function connectAndCreateTable() {
 
 connectAndCreateTable();
 
+// Function to get current stock value
 async function getCurrentStockValue() {
   try {
     const result = await client.query('SELECT stock_value FROM stocks LIMIT 1');
@@ -53,10 +54,11 @@ async function getCurrentStockValue() {
   }
 }
 
+// Update stock value randomly every 20 seconds
 setInterval(async () => {
   try {
     const currentStockValue = await getCurrentStockValue();
-    const randomChange = Math.floor(Math.random() * 11) - 5;
+    const randomChange = Math.floor(Math.random() * 11) - 5; // Random change between -5 and +5
     const newStockValue = currentStockValue + randomChange;
     console.log(`O valor da bolsa atualizou para: ${newStockValue}`);
 
@@ -68,12 +70,7 @@ setInterval(async () => {
   }
 }, 20000);
 
-// Configurar Socket.IO
-io.on('connection', (socket) => {
-  console.log('Client connected');
-});
-
-// Definir rotas
+// Routes
 app.get("/", async (req, res) => {
   res.status(200).json({
     title: "Express Testing",
@@ -81,16 +78,20 @@ app.get("/", async (req, res) => {
   });
 });
 
-app.post('/comprar-acoes', async (req, res) => {
-  const { quantity, totalPrice } = req.body;
-
-  // Aqui você pode processar a compra e atualizar o banco de dados
-  // Exemplo simplificado:
-  // await client.query('INSERT INTO compras (quantity, total_price) VALUES ($1, $2)', [quantity, totalPrice]);
-
-  res.json({ message: `Compra de ${quantity} ações concluída por um total de $${totalPrice}.` });
+// Rota para obter o valor atual das ações
+app.get("/valor-das-acoes", async (req, res) => {
+  try {
+    const currentStockValue = await getCurrentStockValue();
+    res.status(200).json({ stockValue: currentStockValue });
+  } catch (error) {
+    console.error('Erro ao obter o valor atual das ações:', error);
+    res.status(500).json({ error: 'Erro ao obter o valor atual das ações' });
+  }
 });
 
-// Iniciar o servidor
+// Start the server
 const port = process.env.PORT || 9001;
-http.listen(port, () => console.log(`Listening to port ${port}`));
+const server = app.listen(port, () => console.log(`Listening to port ${port}`));
+
+// Socket.IO setup
+const io = require('socket.io')(server);
