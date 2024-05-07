@@ -1,23 +1,28 @@
-// Importe os pacotes necessários
+// Import packages
 const express = require("express");
 const { Client } = require('pg');
+const cors = require('cors'); // Adicionando o pacote CORS
 require('dotenv').config();
 
-// Inicialize o aplicativo Express
+// Middlewares
 const app = express();
 app.use(express.json());
+app.use(cors()); // Usando o middleware CORS para permitir solicitações de qualquer origem
 
-// Conexão com o banco de dados
-const { POSTGRES_URL } = process.env;
+// Database connection
+const { PGHOST, PGDATABASE, PGUSER, PGPASSWORD } = process.env;
 
 const client = new Client({
-  connectionString: POSTGRES_URL,
+  host: PGHOST,
+  database: PGDATABASE,
+  username: PGUSER,
+  password: PGPASSWORD,
+  port: 5432,
   ssl: {
     rejectUnauthorized: false,
   },
 });
 
-// Função para conectar e criar tabela
 async function connectAndCreateTable() {
   try {
     await client.connect();
@@ -33,10 +38,9 @@ async function connectAndCreateTable() {
   }
 }
 
-// Chame a função de conexão e criação da tabela
 connectAndCreateTable();
 
-// Função para obter o valor atual da ação
+// Function to get current stock value
 async function getCurrentStockValue() {
   try {
     const result = await client.query('SELECT stock_value FROM stocks LIMIT 1');
@@ -52,25 +56,23 @@ async function getCurrentStockValue() {
   }
 }
 
-// Atualize o valor da ação aleatoriamente a cada 20 segundos
+// Update stock value randomly every 20 seconds
 setInterval(async () => {
   try {
     const currentStockValue = await getCurrentStockValue();
-    const randomChange = Math.floor(Math.random() * 11) - 5; // Mudança aleatória entre -5 e +5
+    const randomChange = Math.floor(Math.random() * 11) - 5; // Random change between -5 and +5
     const newStockValue = currentStockValue + randomChange;
     console.log(`O valor da bolsa atualizou para: ${newStockValue}`);
 
     await client.query('UPDATE stocks SET stock_value = $1', [newStockValue]);
 
-    // Emita um evento de atualização de ações
-    // (você precisa definir o objeto "io" em outro lugar no seu código)
     io.emit('stock-update', newStockValue);
   } catch (error) {
     console.error('Erro ao atualizar o valor das ações:', error);
   }
 }, 20000);
 
-// Rotas
+// Routes
 app.get("/", async (req, res) => {
   res.status(200).json({
     title: "Express Testing",
@@ -78,7 +80,18 @@ app.get("/", async (req, res) => {
   });
 });
 
-// Rota Home
+// Rota para obter o valor atual das ações
+app.get("/stock-value", async (req, res) => {
+  try {
+    const currentValue = await getCurrentStockValue();
+    res.status(200).json({ value: currentValue });
+  } catch (error) {
+    console.error('Erro ao obter o valor atual das ações:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Home route
 app.get("/home", async (req, res) => {
   res.status(200).json({
     title: "Home Page",
@@ -86,21 +99,13 @@ app.get("/home", async (req, res) => {
   });
 });
 
-// Rota para obter o valor atual das ações
-app.get("/valor-acoes", async (req, res) => {
-  try {
-    const currentStockValue = await getCurrentStockValue();
-    res.status(200).json({
-      currentValue: currentStockValue
-    });
-  } catch (error) {
-    console.error('Erro ao obter o valor atual das ações:', error);
-    res.status(500).json({
-      error: 'Erro ao obter o valor atual das ações'
-    });
+// Start the server
+const port = process.env.PORT || 9001;
+const server = app.listen(port, () => console.log(`Listening to port ${port}`));
+
+// Configuração do Socket.io
+const io = require('socket.io')(server, {
+  cors: {
+    origin: '*',
   }
 });
-
-// Inicie o servidor
-const port = process.env.PORT || 9001;
-app.listen(port, () => console.log(`Listening to port ${port}`));
