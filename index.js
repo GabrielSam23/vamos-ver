@@ -2,7 +2,6 @@
 const express = require("express");
 const { Pool } = require('pg');
 const cors = require('cors'); // Adicionando o pacote CORS
-const { Server } = require("socket.io"); // Importando o Server do Socket.io
 require('dotenv').config();
 
 // Middlewares
@@ -99,12 +98,3 @@ app.get("/home", async (req, res) => {
 // Start the server
 const port = process.env.PORT || 9001;
 const server = app.listen(port, () => console.log(`Listening to port ${port}`));
-
-// Configuração do Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: 'https://superb-cajeta-b18150.netlify.app',
-    methods: ['GET', 'POST'],
-    credentials: true
-  }
-});
