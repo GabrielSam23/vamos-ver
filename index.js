@@ -68,6 +68,12 @@ setInterval(async () => {
   }
 }, 20000);
 
+// Configurar Socket.IO
+io.on('connection', (socket) => {
+  console.log('Client connected');
+});
+
+// Definir rotas
 app.get("/", async (req, res) => {
   res.status(200).json({
     title: "Express Testing",
@@ -85,6 +91,6 @@ app.post('/comprar-acoes', async (req, res) => {
   res.json({ message: `Compra de ${quantity} ações concluída por um total de $${totalPrice}.` });
 });
 
+// Iniciar o servidor
 const port = process.env.PORT || 9001;
 http.listen(port, () => console.log(`Listening to port ${port}`));
-
