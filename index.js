@@ -1,7 +1,8 @@
 // Import packages
 const express = require("express");
-const { Client } = require('pg');
+const { Pool } = require('pg');
 const cors = require('cors'); // Adicionando o pacote CORS
+const { Server } = require("socket.io"); // Importando o Server do Socket.io
 require('dotenv').config();
 
 // Middlewares
@@ -10,22 +11,13 @@ app.use(express.json());
 app.use(cors()); // Usando o middleware CORS para permitir solicitações de qualquer origem
 
 // Database connection
-const { PGHOST, PGDATABASE, PGUSER, PGPASSWORD } = process.env;
-
-const client = new Client({
-  host: PGHOST,
-  database: PGDATABASE,
-  username: PGUSER,
-  password: PGPASSWORD,
-  port: 5432,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL, // Use sua variável de ambiente para a conexão do banco de dados
 });
 
 async function connectAndCreateTable() {
   try {
-    await client.connect();
+    const client = await pool.connect();
     await client.query(`
       CREATE TABLE IF NOT EXISTS stocks (
         id SERIAL PRIMARY KEY,
@@ -33,6 +25,7 @@ async function connectAndCreateTable() {
       )
     `);
     console.log('Tabela "stocks" verificada ou criada com sucesso.');
+    client.release(); // Libera o cliente de volta para o pool
   } catch (err) {
     console.error('Erro ao conectar ou criar a tabela "stocks":', err);
   }
@@ -43,11 +36,14 @@ connectAndCreateTable();
 // Function to get current stock value
 async function getCurrentStockValue() {
   try {
+    const client = await pool.connect();
     const result = await client.query('SELECT stock_value FROM stocks LIMIT 1');
+    client.release(); // Libera o cliente de volta para o pool
     if (result.rows.length > 0) {
       return parseInt(result.rows[0].stock_value);
     } else {
-      await client.query('INSERT INTO stocks (stock_value) VALUES ($1)', [100]);
+      const insertQuery = 'INSERT INTO stocks (stock_value) VALUES ($1)';
+      await pool.query(insertQuery, [100]);
       return 100;
     }
   } catch (error) {
@@ -64,9 +60,7 @@ setInterval(async () => {
     const newStockValue = currentStockValue + randomChange;
     console.log(`O valor da bolsa atualizou para: ${newStockValue}`);
 
-    await client.query('UPDATE stocks SET stock_value = $1', [newStockValue]);
-
-    io.emit('stock-update', newStockValue);
+    await pool.query('UPDATE stocks SET stock_value = $1', [newStockValue]);
   } catch (error) {
     console.error('Erro ao atualizar o valor das ações:', error);
   }
@@ -104,7 +98,7 @@ const port = process.env.PORT || 9001;
 const server = app.listen(port, () => console.log(`Listening to port ${port}`));
 
 // Configuração do Socket.io
-const io = require('socket.io')(server, {
+const io = new Server(server, {
   cors: {
     origin: '*',
   }
