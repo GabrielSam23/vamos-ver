@@ -35,7 +35,7 @@ async function connectAndCreateTable() {
 
 connectAndCreateTable();
 
-// Function to get current stock value
+// Função para obter o valor atual das ações
 async function getCurrentStockValue() {
   try {
     const client = await pool.connect();
@@ -54,21 +54,30 @@ async function getCurrentStockValue() {
   }
 }
 
-// Update stock value randomly every 20 seconds
-setInterval(async () => {
+// Função para atualizar o valor das ações
+async function updateStockValue() {
   try {
     const currentStockValue = await getCurrentStockValue();
-    const randomChange = Math.floor(Math.random() * 11) - 5; // Random change between -5 and +5
-    const newStockValue = currentStockValue + randomChange;
+    // Definindo a tendência de mercado
+    const trend = Math.floor(Math.random() * 11) - 5; // Valor de tendência entre -5 e 5
+    // Gerando uma variação aleatória
+    const randomChange = Math.floor(Math.random() * 6) - 3; // Variação aleatória entre -3 e 3
+    // Calculando o novo valor das ações com base na tendência e na variação aleatória
+    let newStockValue = currentStockValue + trend + randomChange;
+    // Limitando o valor das ações entre 50 e 150
+    newStockValue = Math.max(50, Math.min(150, newStockValue));
     console.log(`O valor da bolsa atualizou para: ${newStockValue}`);
-
+    // Atualizando o valor no banco de dados
     await pool.query('UPDATE stocks SET stock_value = $1', [newStockValue]);
   } catch (error) {
     console.error('Erro ao atualizar o valor das ações:', error);
   }
-}, 20000);
+}
 
-// Routes
+// Atualizar o valor das ações a cada 20 segundos
+setInterval(updateStockValue, 20000);
+
+// Rotas
 app.get("/", async (req, res) => {
   res.status(200).json({
     title: "Express Testing",
@@ -87,7 +96,7 @@ app.get("/stock-value", async (req, res) => {
   }
 });
 
-// Home route
+// Rota home
 app.get("/home", async (req, res) => {
   res.status(200).json({
     title: "Home Page",
@@ -95,6 +104,6 @@ app.get("/home", async (req, res) => {
   });
 });
 
-// Start the server
+// Iniciar o servidor
 const port = process.env.PORT || 9001;
 const server = app.listen(port, () => console.log(`Listening to port ${port}`));
