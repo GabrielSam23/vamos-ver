@@ -8,7 +8,7 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: 'https://superb-cajeta-b18150.netlify.app',
+  origin: 'https://bolsadevalores-samp.netlify.app/',
   credentials: true
 }));
 
