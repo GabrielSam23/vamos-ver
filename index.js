@@ -8,7 +8,7 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: 'https://bolsadevalores-samp.netlify.app',
+  origin: 'https://maze-banksa.netlify.app',
   credentials: true
 }));
 
